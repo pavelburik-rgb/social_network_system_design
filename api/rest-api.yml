@@ -130,7 +130,7 @@ paths:
         '400':
           description: Bad request
 
-  /post/comments/{postId}:
+  /post/{postId}/comment:
     get:
       tags: ['post']
       summary: Получить все комментарии к посту
@@ -201,6 +201,29 @@ paths:
           description: Пост успешно изменен
         '400':
           description: Bad request
+
+  /post/{postId}/like:
+    post:
+      tags: ['post']
+      summary: Оставить оценку к посту
+      operationId: likePost
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: postId
+          in: path
+          required: true
+          description: ID поста
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Комментарии к посту
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentFromPost'
+        '400':
+          description: Bad request   
 
   /feed:
     get:
@@ -388,6 +411,8 @@ components:
         likes:
           type: integer
           example: 1554  
+        like:
+          type: boolean
         created_at:
           type: string
 
