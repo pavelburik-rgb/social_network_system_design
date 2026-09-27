@@ -1,0 +1,489 @@
+openapi: 3.0.0
+info:
+  title: TravelersAPI
+  description: API предназначено для реализации функциональности социальной сети для путешественников
+  version: 1.0.0
+
+servers:
+  - url: https://traveling.com/api/v1
+    description: Production
+  - url: https://repl-api.traveling.com/api/v1
+    description: Preprod
+
+tags:
+  - name: post
+  - name: feed
+  - name: travellers
+
+paths:
+  /post:
+    post:
+      tags: ['post']
+      summary: Создать новый пост о путешествии
+      operationId: createPost
+      parameters:
+        - $ref: "#/components/parameters/UserIdHeader"
+      requestBody:
+        description: Информация для поста
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Post'
+        required: true
+      responses:
+        '201':
+          description: Пост успешно создан
+        '400':
+          description: Bad request
+
+  /post/{postId}:
+    patch:
+      tags: ['post']
+      summary: Изменение поста
+      operationId: editPost
+      parameters:
+        - $ref: "#/components/parameters/UserIdHeader"
+        - name: postId
+          in: path
+          description: ID изменяемого поста
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Исправленная информация о посте
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Post'
+        required: true
+      responses:
+        '200':
+          description: Пост успешно изменен
+        '400':
+          description: Bad request
+
+    delete:
+      tags: ['post']
+      summary: Удаление поста
+      operationId: deletePost
+      parameters:
+        - $ref: "#/components/parameters/UserIdHeader"
+        - name: postId
+          in: path
+          description: Post id to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Пост удален
+        '400':
+          description: Bad request
+
+  /photo:
+    post:
+      tags: ['post']
+      summary: Фото для поста
+      operationId: loadPhoto
+      parameters:
+        - $ref: "#/components/parameters/UserIdHeader"
+      requestBody:
+        description: Загрузка фото
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: Файл изображения до 10 МБ
+      responses:
+        '201':
+          description: Фото успешно загружено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+        '400':
+          description: Bad request
+        '404':
+          description: Слишком большой файл
+ 
+  /photo/{photoId}:
+    delete:
+      tags: ['post']
+      summary: Удалить загруженное фото
+      operationId: deletePhoto
+      parameters:
+        - $ref: "#/components/parameters/UserIdHeader"
+        - name: photoId
+          in: path
+          description: ID фото для удаления
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Фото успешно удалено
+        '400':
+          description: Bad request
+
+  /post/comments/{postId}:
+    get:
+      tags: ['post']
+      summary: Получить все комментарии к посту
+      operationId: getComments
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: postId
+          in: path
+          required: true
+          description: ID поста
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Комментарии к посту
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentFromPost'
+        '400':
+          description: Bad request   
+    post:
+      tags: ['post']
+      summary: Оставить комментарий к посту
+      operationId: postComment
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: postId
+          in: path
+          required: true
+          description: ID поста
+          schema:
+            type: string
+      requestBody:
+        description: Информация для поста
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      responses:
+        '201':
+          description: Пост успешно создан
+        '400':
+          description: Bad request
+
+    put:
+      tags: ['post']
+      summary: Изменить комментарий к посту
+      operationId: changeComment
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: postId
+          in: path
+          required: true
+          description: ID поста
+          schema:
+            type: string
+      requestBody:
+        description: Изменение для поста
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      responses:
+        '201':
+          description: Пост успешно изменен
+        '400':
+          description: Bad request
+
+  /feed:
+    get:
+      tags: ['feed']
+      summary: Лента постов 
+      operationId: giveFeed
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: limit
+          in: query
+          required: false
+          description: Количество постов на странице
+          schema:
+            type: integer
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          description: Курсор для получения следующей страницы. Берётся из next_cursor предыдущего ответа. Если не передан — возвращается первая страница.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список постов с метаданными пагинации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponse'
+        '400':
+          description: Bad request    
+
+  /search/{geo_name}:
+    get:
+      tags: ['feed']
+      summary: Поиск постов 
+      operationId: searchPost
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: geo_name
+          in: path
+          required: true
+          description: Гео для поиска
+          schema:
+            type: string 
+        - name: limit
+          in: query
+          required: false
+          description: Количество постов на странице
+          schema:
+            type: integer
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          description: Курсор для получения следующей страницы. Берётся из next_cursor предыдущего ответа. Если не передан — возвращается первая страница.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список постов с метаданными пагинации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponse'
+        '400':
+          description: Bad request     
+
+  /travellers/{travellerId}:
+    get:
+      tags: ['travellers']
+      summary: Страница конкретного путешественника
+      operationId: giveFeedByTravellerId
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: travellerId
+          in: path
+          required: true
+          description: ID путешественника
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Количество постов на странице
+          schema:
+            type: integer
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          description: Курсор для получения следующей страницы. Берётся из next_cursor предыдущего ответа. Если не передан — возвращается первая страница.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список постов конкретного путешественника с метаданными пагинации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TravellerFeedResponse'
+        '400':
+          description: Bad request    
+
+  /travellers/{travellerId}/subscription:
+    post:
+      tags: ['travellers']
+      summary: Подписка на путешественника
+      operationId: subscribeOnTraveller
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: travellerId
+          in: path
+          required: true
+          description: ID путешественника
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешная подписка
+        '400':
+          description: Bad request
+          
+    delete:
+      tags: ['travellers']
+      summary: Отписка от путешественника
+      operationId: unsubscribeFromTraveller
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: travellerId
+          in: path
+          required: true
+          description: ID путешественника
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Отписка успешна
+        '400':
+          description: Bad request       
+
+
+components:
+  parameters:
+    UserIdHeader:
+      name: X-User-Id
+      description: ID пользователя
+      required: true
+      in: header
+      schema:
+        type: string
+
+  schemas:
+
+    Post:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Жизнь в Альпах"
+        text:
+          type: string
+          example: "В июле 2026 года мы отправились на машине в Австрию на кемпинг..."
+        geo_name:
+          type: string
+          example: "Wolfgangsee"
+        geo_position_l:
+          type: string
+          example: "32.43353455"
+        geo_position_2:
+          type: string
+          example: "54.43353455"
+        photo_ids:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            example: media_789
+
+    PostInfo:
+      type: object
+      properties:
+        postId:
+          type: string
+          example: "wh2354tw3rf32did2kdd"
+        likes:
+          type: integer
+          example: 1554  
+        created_at:
+          type: string
+
+    CommentFromPost:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Comment'
+              - $ref: '#/components/schemas/CommentInfo'
+              - $ref: '#/components/schemas/UserInfo'
+
+    Comment:
+      type: object
+      properties:
+        text:
+          type: string
+
+    CommentInfo:
+      type: object
+      properties:
+        commentId:
+          type: string
+          example: "wh2354tw3rf32did2kdd"
+        text:
+          type: string
+        created_at:
+          type: string
+
+    UserInfo:
+      type: object
+      properties:
+        travellerId:
+          type: string
+          example: "wh23ur3223id2kdd"
+        travellerName:
+          type: string
+          example: "Иван"
+        travellerSurname:
+          type: string
+          example: "Иванов"
+        travellerLogo:
+          type: string
+        isSubscribed: 
+          type: boolean
+          
+    Photo:
+      type: object
+      properties:
+        photo_id:
+          type: string
+        created_at:
+          type: string
+
+    FeedResponse:
+      type: object
+      required: [items, pagination]
+      properties:
+        posts:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Post'
+              - $ref: '#/components/schemas/PostInfo'
+              - $ref: '#/components/schemas/UserInfo'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    TravellerFeedResponse:
+      type: object
+      required: [traveller, posts, pagination]
+      properties:
+        traveller:
+          $ref: '#/components/schemas/UserInfo'
+        posts:
+          type: array
+          maxItems: 10
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Post'
+              - $ref: '#/components/schemas/PostInfo'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Pagination:
+      type: object
+      required: [limit, has_more]
+      properties:
+        limit:
+          type: integer
+        next_cursor:
+          type: string
+          nullable: true
+          description: Курсор для следующей страницы. null, если страниц больше нет.
+        has_more:
+          type: boolean
+          example: true
